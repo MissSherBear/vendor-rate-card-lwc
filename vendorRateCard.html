@@ -1,0 +1,166 @@
+<template>
+    <template if:true={showFirstScreen}>
+      <lightning-card title="Vendor Rate Card" icon-name="custom:custom14">
+        <div class="slds-m-around_medium">
+
+                <lightning-record-edit-form object-api-name="Vendor_Rate_Card__c" density="comfy" onsuccess={handleSuccess}>
+                    <lightning-messages></lightning-messages>
+                    <div class="slds-grid slds-wrap" style="padding-left: 10px; padding-right: 10px;">
+                        <div class="slds-col slds-size_1-of-2 slds-form-element_1-col">
+                            <lightning-input-field field-name="Project_Price_Book__c" value={recordId}></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-form-element_1-col">
+                            <lightning-input-field field-name="Vendor_Account__c" value={vendorAccount} onchange={handleVendorAccountChange}></lightning-input-field>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-form-element_1-col">
+                            <lightning-input type="url" label="Link to Contract" name="contracturl" placeholder="https://..." value={contractUrl} onchange={handleUrlChange} ></lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4 slds-form-element_1-col">
+                            <lightning-input-field field-name="Payment_Terms__c" value={paymentTerms} onchange={handlePaymentTermsChange}></lightning-input-field>
+                        </div>
+                        <!-- <div class="slds-col slds-size_1-of-4 slds-form-element_1-col">
+                            <lightning-input-field field-name="OU__c" value={ou} onchange={handleOperatingUnitChange}></lightning-input-field>
+                        </div> -->
+                    </div>
+                </lightning-record-edit-form>
+
+                <div style="padding: 15px; color: #0C2854;">
+                  <p style="font-size:large">Add Rates to Vendor Rate Card</p>
+                  <p>Set rates for this Vendor Account by populating the Vendor Price. Click "Save Rates" to create your Vendor Pricing records.</p>
+                </div>
+
+                <!-- <div style="height: 500px;">
+                  <table class="slds-table slds-table_bordered" style="width: min-content; height: 500px;">
+                    <thead>
+                        <th>Price Book Item</th>
+                        <th>Description</th>
+                        <th>UOM</th>
+                        <th>Price Per Unit</th>
+                        <th>Congruex Vendor Price</th>
+                    </thead>
+                <template for:each ={pricingRecords} for:item="pr">
+                    <tbody key={pr.Id}>
+                        <tr>
+                            <td>
+                                <lightning-formatted-url value={pr.priceBookItemName} label={pr.priceBookItemName} target="_blank"></lightning-formatted-url>
+                            </td>
+                            <td>{pr.description}</td>
+                            <td>{pr.uom}</td>
+                            <td>{pr.pricePerUnit}</td>
+                            <td>
+                                <lightning-input type="currency" variant="label-hidden" ></lightning-input>
+                            </td>
+                        </tr>
+                    </tbody>
+                </template>
+                </table>
+                </div> -->
+
+                <div style="height: 400px; color:#0C2854;">
+                    <lightning-datatable 
+                        key-field="priceBookItemId"
+                        data={pricingRecords}
+                        columns={columns}
+                        resize-column-disabled
+                        hide-checkbox-column="true"
+                        onrowselection={add}
+                        draft-values={draftValues}
+                        suppress-bottom-bar="true"
+                        onrowaction={handlePricingRowAction}
+                        oncellchange={handleCellChange}
+                        onchange={handlePricingChange}
+                        onsave={handleSave}>
+                    </lightning-datatable>
+                </div>
+
+            </div>
+
+                <!-- <table class="slds-table">
+                    <thead>
+                        <th>Price Book Item</th>
+                        <th>Description</th>
+                        <th>UOM</th>
+                        <th>Price Per Unit</th>
+                    </thead>
+                    <tbody>
+                        <template for:each={pricingRecords} for:item="pr">
+                            <tr key={pr.Id}>
+                                <td>{pr.priceBookItemName}</td>
+                                <td>{pr.description}</td>
+                                <td>{pr.uom}</td>
+                                <td>{pr.pricePerUnit}</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table> -->
+                <!-- <p>Selected rows: {selectedRows}</p>
+                <template for:each ={selectedRows} for:item="row">
+                    <p key={row.Id}>{row.priceBookItemName} {row.description} {row.uom} {row.pricePerUnit}</p>
+                </template>
+                <p>Vendor Account: {vendorAccount}</p>
+                <p>Selected items: {selection}</p>
+                <p>Edited rows: {editedRows}</p>
+                <ul>
+                    <template for:each={editedRows} for:item="row">
+                        <li key={row.Id}>
+                            <p>{row.Id}</p>
+                            <p>{row.priceBookItemName}</p>
+                            <p>Congruex Vendor Price: {row.congruexVendorPrice}</p>
+                        </li>
+                    </template>
+                </ul>
+                <template for:each={stringifyEditedRows} for:item="stringifiedRow">
+                    <li key={stringifiedRow}>{stringifiedRow}</li>
+                </template>
+
+                <p>Updated rows: {updatedRows}</p>
+                <p>Updated rows:</p>
+                <ul>
+                    <template for:each={stringifyRows} for:item="stringifiedRow">
+                        <li key={stringifiedRow}>{stringifiedRow}</li>
+                    </template>
+                </ul>
+                <ul>
+                    <template for:each={updatedRows} for:item="updatedRow">
+                        <li key={updatedRow.Id}>
+                            <p>Row Id: {updatedRow.Id} 
+                               Congruex Vendor Price: {updatedRow.congruexVendorPrice}</p>
+                        </li>
+                    </template>
+                </ul>
+                <p>Draft values: {draftValues}</p> -->
+                    <!-- <lightning-button label="Next" onclick={handleNext} slot="footer"></lightning-button> -->
+                    <!-- <lightning-button label="Save 4" onclick={handleSave4} slot="footer"></lightning-button>
+                    <lightning-button label="Save 3" onclick={handleSave3} slot="footer"></lightning-button>
+                    <lightning-button label="Save 2" onclick={handleSave2} slot="footer"></lightning-button>
+                    <lightning-button label="Save" onclick={handleSave} slot="action"></lightning-button> -->
+                
+                <div slot="footer" class="slds-m-around_x-small">
+                    <lightning-button label="Cancel" onclick={handleCancel} class="slds-m-left_x-small"></lightning-button>
+                    <lightning-button label="Save Rates" onclick={handleConfirmCreate} variant="brand" class="slds-m-left_x-small"></lightning-button>
+                </div>
+
+        </lightning-card>
+    </template>
+
+    <template if:true={showSecondScreen}>
+        <lightning-card title="Confirm Vendor Rates" icon-name="custom:custom14">
+            <div class="slds-m-around_medium">
+                <h2>Confirm Vendor Rates</h2>
+                    <p>Review the vendor rates and click Save to create a new Vendor Rate Card with the following Congruex Vendor Pricing records.</p>
+                    <p>{editedRows}</p>
+                    <p> Vendor Account: {vendorAccount}</p>
+
+                    <!-- Show the edited rows here -->
+                    <p>Edited rows: {editedRows}</p>
+                </div>
+                <div slot="footer">
+                    <lightning-button label="Previous" onclick={handlePrevious}></lightning-button>
+                    <lightning-button label="Save" onclick={handleSave}></lightning-button>
+                    <lightning-button label="Save 2" onclick={handleSave2}></lightning-button>
+                    <lightning-button label="Confirm Create" onclick={handleConfirmCreate}></lightning-button>
+                </div>
+        </lightning-card>
+    </template>
+    
+</template>
