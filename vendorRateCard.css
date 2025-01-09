@@ -7,16 +7,3 @@ table th {
     background-color: #f4f6f9;
     text-transform: uppercase;
 }
-
-::webkit-scrollbar {
-    width: 0.5em;
-}
-
-.slds-modal__container {
-    max-width: 80rem !important;
-    width: 80% !important;
-}
-
- 
-
-
