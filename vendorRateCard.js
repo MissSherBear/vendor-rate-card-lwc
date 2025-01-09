@@ -2,16 +2,12 @@ import { LightningElement, wire, track, api } from 'lwc';
 import getProjectPriceBookWithItems from '@salesforce/apex/VendorRateCardController.getProjectPriceBookWithItems';
 import createCongruexPricingRecords from '@salesforce/apex/VendorRateCardController.createCongruexPricingRecords';
 import createVendorRateCardWithItems from '@salesforce/apex/VendorRateCardController.createVendorRateCardWithItems';
-import createVendorRateCardWithPricingItems from '@salesforce/apex/VendorRateCardController.createVendorRateCardWithPricingItems';
 import saveCongruexPricingRecords from '@salesforce/apex/VendorRateCardController.saveCongruexPricingRecords';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
-import { CloseActionScreenEvent } from 'lightning/actions';
 
 import BU_FIELD from '@salesforce/schema/sitetracker__Project_Price_Book__c.BU__c';
 import ACCOUNT_BU_FIELD from '@salesforce/schema/Account.BU__c';
-import VENDOR_ACCOUNT_TYPE from '@salesforce/schema/Account.Vendor_Account_Type__c';
-import { setTimeoutPromise } from '@salesforce/apex';
 
 export default class VendorRateCard extends LightningElement {
     @api recordId;
@@ -30,10 +26,6 @@ export default class VendorRateCard extends LightningElement {
     @track myList = [];
     bu;
     vendorAccountOu;
-    vendorAccountType;
-    loadMoreStatus;
-    data = [];
-    @api totalNumberOfRows;
 
 
     columns = [ 
@@ -48,22 +40,6 @@ export default class VendorRateCard extends LightningElement {
         { hideDefaultActions: true, fixedWidth: 50}
     ];
 
-    // renderedCallback() {
-    //     if (this.isLoaded) return;
-    //     const STYLE = document.createElement('style');
-    //     STYLE.innerText = `.uiModal--medium .modal-container {
-    //         width: 100% !important;
-    //         max-width: 100%;
-    //         min-width: 480px;
-    //         max-height: 100%;
-    //         min-height: 480px;
-    //     }`;
-    //     this.template.querySelector('lightning-card').appendChild(STYLE);
-    //     this.isLoaded = true;
-
-    //     }
-
-    
 
     getSelectedName(event) {
         const selectedRows = event.detail.selectedRows;
@@ -79,17 +55,6 @@ export default class VendorRateCard extends LightningElement {
 
     }
 
-    loadMoreData(event) {
-        event.target.isLoading = true;
-        this.loadMoreStatus = 'Loading';
-
-        setTimeoutPromise(3000)
-        }
-
-        
-
-
-
 
     @wire(getProjectPriceBookWithItems, { recordId: '$recordId' })
     wiredPriceBookItems({ error, data }) {
@@ -99,14 +64,8 @@ export default class VendorRateCard extends LightningElement {
             this.pricingRecords = [];
             // Check if sitetracker__Price_Book_Items__r exists in data
         if (data.sitetracker__Price_Book_Items__r) {
+            // Loop through each Price Book Item
             data.sitetracker__Price_Book_Items__r.forEach(priceBookItem => {
-                let vendorPrice = null; 
-                // Check if the vendorAccount Type is Standard
-                
-
-                if (priceBookItem.External_Labor_Cost__c && this.vendorAccountType === 'Standard') {
-                    vendorPrice = priceBookItem.External_Labor_Cost__c;
-                }
                 // Push the necessary fields to pricingRecords array
                 this.pricingRecords.push({
                     priceBookItemId: priceBookItem.Id,
@@ -114,8 +73,7 @@ export default class VendorRateCard extends LightningElement {
                     description: priceBookItem.sitetracker__Description__c,
                     uom: priceBookItem.UOM__c,
                     pricePerUnit: priceBookItem.Price_Per_Unit__c,
-                    externalLaborCost: priceBookItem.External_Labor_Cost__c,
-                    congruexVendorPrice: vendorPrice
+                    externalLaborCost: priceBookItem.External_Labor_Cost__c
                 });
             });
         }
@@ -143,25 +101,12 @@ export default class VendorRateCard extends LightningElement {
     }
 
     // Method to fetch the Account BU from the vendorAccount
-    @wire(getRecord, { recordId: '$vendorAccount', fields: [ACCOUNT_BU_FIELD, VENDOR_ACCOUNT_TYPE] })
+    @wire(getRecord, { recordId: '$vendorAccount', fields: [ACCOUNT_BU_FIELD] })
     wiredAccount({ error, data }) {
         if (data) {
             this.vendorAccountOu = getFieldValue(data, ACCOUNT_BU_FIELD);
-            this.vendorAccountType = getFieldValue(data, VENDOR_ACCOUNT_TYPE);
             console.log('wired vendorAccountOu', this.vendorAccountOu);
-            console.log('wired vendorAccountType', this.vendorAccountType);
             this.validateBUandOU();
-
-            // Check if the vendorAccount Type is Standard
-            if (this.vendorAccountType === 'Standard') {
-                this.pricingRecords = this.pricingRecords.map(priceBookItem => {
-                    if (priceBookItem.externalLaborCost) {
-                        priceBookItem.congruexVendorPrice = priceBookItem.externalLaborCost;
-                    }
-                    return priceBookItem;
-                });
-            }
-
         } else if (error) {
             console.error('Error loading Account record', error);
         }
@@ -180,7 +125,6 @@ export default class VendorRateCard extends LightningElement {
 
     connectedCallback() {
         getProjectPriceBookWithItems({ recordId: this.recordId })
-
             .then(result => {
                 // handle the result
                 console.log('connectedCallback result: ', result);
@@ -190,6 +134,7 @@ export default class VendorRateCard extends LightningElement {
                 // handle the error
                 console.log('connectedCallback error: ', error);
             });
+
     }
 
     showFirstScreen = true;
@@ -201,7 +146,6 @@ export default class VendorRateCard extends LightningElement {
         console.log('handleVendorAccountChange vendorAccount: ', event.target.value);
         console.log('BU', this.bu);
         console.log('this.vendorAccountOu', this.vendorAccountOu);
-        console.log('this.vendorAccountType', this.vendorAccountType);
         this.checkAccountBu();
     }
 
@@ -329,78 +273,6 @@ export default class VendorRateCard extends LightningElement {
 
     }
 
-    handleSaveSelected() {
-        // Filter selected rows
-        const selectedRows = this.template.querySelector('lightning-datatable').getSelectedRows();
-        console.log('selectedRows', selectedRows);
-        
-        const itemsToCreate = selectedRows.map(row => ({
-            priceBookItemId: row.priceBookItemId,
-            congruexVendorPrice: row.congruexVendorPrice
-        }));
-
-        console.log('itemsToCreate', itemsToCreate);
-
-        // Call the Apex method to create the Vendor Rate Card with Pricing Items
-        createVendorRateCardWithPricingItems({ 
-            projectPriceBookId: this.recordId,
-            vendorAccount: this.vendorAccount,
-            contractUrl: this.contractUrl,
-            paymentTerms: this.paymentTerms,
-            selectedRows: itemsToCreate
-        })
-
-        // createVendorRateCardWithPricingItems({ selectedRows: itemsToCreate })
-
-            .then(result => {
-                // handle the result
-                console.log('result', result);
-
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Success!',
-                        message: 'The Vendor Rate Card with Congruex Vendor Pricing records has been created successfully',
-                        variant: 'success'
-                    })
-                );
-                // Close the modal
-                this.dispatchEvent(new CloseActionScreenEvent());
-
-            })
-            .catch(error => {
-                // handle the error
-                console.log('error', error);
-
-                let errorMessage = 'An error occurred while creating the Vendor Rate Card';
-
-                if (Array.isArray(error.body)) {
-                    errorMessage = error.body.map(e => e.message).join(', ');
-                } else if (typeof error.body.message === 'string') {
-                    errorMessage += error.body.message;
-                } else if (error.body.output && typeof error.body.output.errors === 'object') {
-                    errorMessage += error.body.output.errors.map(e => e.message).join(', ');
-                } else if (error.body.fieldErrors && typeof error.body.fieldErrors === 'object') {
-                    // Check if there are fieldErrors
-                    errorMessage = Object.values(error.body.fieldErrors)
-                        .map(fieldError => fieldError.map(e => e.message).join(', '))
-                        .join(', ');
-                } else {
-                    errorMessage += JSON.stringify(error.body);
-                }
-                    this.dispatchEvent(
-                        new ShowToastEvent({
-                            title: 'Error creating Vendor Rate Card with Pricing Items',
-                            message: errorMessage,
-                            variant: 'error',
-                            mode: 'sticky'
-
-                        })
-                    );
-                }
-            ); 
-
-    }
-
 
     handleConfirmCreate() {
         console.info({updatedRows : this.updatedRows});
@@ -423,8 +295,9 @@ export default class VendorRateCard extends LightningElement {
                         variant: 'success'
                     })
                 );
-                // Close the quick action modal
-                this.dispatchEvent(new CloseActionScreenEvent());
+                // Close the modal
+                this.showFirstScreen = false;
+                this.showSecondScreen = false;
 
             })
             .catch(error => {
@@ -449,7 +322,7 @@ export default class VendorRateCard extends LightningElement {
                 }
                     this.dispatchEvent(
                         new ShowToastEvent({
-                            title: 'Error creating Vendor Rate Card with Pricing Items',
+                            title: 'Error creating Vendor Rate Card with Items',
                             message: errorMessage,
                             variant: 'error',
                             mode: 'sticky'
@@ -459,8 +332,6 @@ export default class VendorRateCard extends LightningElement {
                 }
             );
     }
-
-
 
 
 
@@ -513,7 +384,7 @@ export default class VendorRateCard extends LightningElement {
                 createCongruexPricingRecords({ 
                     Id: editedRowData.Id, 
                     priceBookItemName: editedRowData.priceBookItemName,
-                    congruexVendorPrice: updatedRow.Cost__c,
+                    congruexVendorPrice: updatedRow.Congruex_Vendor_Price__c,
                     vendorAccount: this.vendorAccount                
                 })
                     .then(result => {
@@ -641,13 +512,4 @@ export default class VendorRateCard extends LightningElement {
         return this.editedRows.map(row => JSON.stringify(row));
     }
 
-    closeQuickAction() {
-        this.dispatchEvent(new CloseActionScreenEvent());
-    }
-
-    handleCancel() {
-        this.dispatchEvent(new CloseActionScreenEvent());
-    }
-
 }
-
