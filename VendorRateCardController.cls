@@ -43,14 +43,13 @@ public with sharing class VendorRateCardController {
             FROM sitetracker__Project_Price_Book__c 
             WHERE Id = :recordId
         ];
-        
     }
 
     // Get the Vendor Account from the Vendor_Account__c input field on the lightning web component
     @AuraEnabled
     public static Account getVendorAccountId(Id vendorAccountId) {
         return [
-            SELECT Id, Name
+            SELECT Id, Name 
             FROM Account 
             WHERE Id = :vendorAccountId
         ];
@@ -73,6 +72,8 @@ public with sharing class VendorRateCardController {
     public static String getProjectPriceBookBU(Id recordId) {
         return getProjectPriceBook(recordId).BU__c;
     }
+    
+
 
     // Get the payment terms from the Payment_Terms__c input field on the lightning web component
     @AuraEnabled
@@ -90,11 +91,54 @@ public with sharing class VendorRateCardController {
         return ou;
     }
 
-    @AuraEnabled
-    public static String getVendorAccountType(String vendorAccountType) {
-        return vendorAccountType;
-    }
 
+    // private static List<CongruexPricingRecord> createCongruexPricingObjects(List<Congruex_Vendor_Pricing__c> pricingRecords) {
+    //     List<CongruexPricingRecord> pricings = new List<CongruexPricingRecord>();
+    //     for(Congruex_Vendor_Pricing__c pricingRecord : pricingRecords) {
+    //         pricings.add(new CongruexPricingRecord() 
+    //             .setPriceBookItemId(pricingRecord.Price_Book_Item__c)
+    //             .setCongruexVendorPricing(pricingRecord.congruexVendorPrice)
+    //             .setVendorAccountId(pricingRecord.Vendor_Account__c)
+    //             .setVendorRateCard(new Vendor_Rate_Card__c(
+    //                 Project_Price_Book__c = pricingRecord.Project_Price_Book__c,
+    //                 Vendor_Account__c = pricingRecord.Vendor_Account__c,
+    //                 Name = 'Vendor Rate Card' + pricingRecord.Vendor_Account__r.Name + ' - ' + pricingRecord.Project_Price_Book__r.Name
+    //             ))
+    //         );
+    //         return pricings;
+    //     }
+    // }
+
+
+    // Create a new Vendor Rate Card record from the lightning web component input fields and the current Project Price Book record  
+    // @AuraEnabled
+    // public static void createVendorRateCard() {
+    //     // Create a new Vendor Rate Card record
+    //     Congruex_Vendor_Rate_Card__c vendorRateCard = new Congruex_Vendor_Rate_Card__c() {
+    //         Name = 'Vendor Rate Card' + getVendorAccount().Name + ' - ' + getProjectPriceBook().Name,
+    //         Project_Price_Book__c = getProjectPriceBook().Id,
+    //         Vendor_Account__c = getVendorAccount().Id
+    //     };
+
+    //     // Insert the new Vendor Rate Card record
+    //     insert vendorRateCard;
+    // }
+
+    // @AuraEnabled
+    // public static void createVendorRateCard(Id projectPriceBookId, Id vendorAccountId) {
+    //     // Create a new Vendor Rate Card record
+    //     Congruex_Vendor_Rate_Card__c vendorRateCard = new Congruex_Vendor_Rate_Card__c();
+    //     vendorRateCard.Name = 'Vendor Rate Card' + getVendorAccount(vendorAccountId).Name + ' - ' + getProjectPriceBook(projectPriceBookId).Name;
+    //     vendorRateCard.Project_Price_Book__c = projectPriceBookId;
+    //     vendorRateCard.Vendor_Account__c = vendorAccountId;
+
+    //     // Insert the new Vendor Rate Card record
+    //     insert vendorRateCard;
+
+    //     // Create a new Congruex Vendor Pricing record for each row that was edited in the LWC datatable and add it to the Vendor Rate Card
+
+        
+    // }
 
     @AuraEnabled
     public static void createVendorRateCardWithItems(Id projectPriceBookId, Id vendorAccount, String contractUrl, String paymentTerms, String ou, List<Map<String, Object>> editedRows) {
@@ -104,19 +148,11 @@ public with sharing class VendorRateCardController {
         System.debug('contractUrl: ' + contractUrl);
         System.debug('paymentTerms: ' + paymentTerms);
         System.debug('ou: ' + ou);
-        System.debug('editedRows: ' + editedRows);
         // Create a new Vendor Rate Card record
         Vendor_Rate_Card__c vendorRateCard = new Vendor_Rate_Card__c();
         vendorRateCard.Project_Price_Book__c = projectPriceBookId;
         vendorRateCard.Vendor_Account__c = vendorAccount;
-
-        // Construct the Name and trim if it exceeds 80 characters
-        // vendorRateCard.Name = LEFT(getVendorAccountName(vendorAccount) + ' - ' + getProjectPriceBookName(projectPriceBookId), 80);
-
         vendorRateCard.Name = getVendorAccountName(vendorAccount) + ' - ' + getProjectPriceBookName(projectPriceBookId);
-        if (vendorRateCard.Name.length() > 80) {
-            vendorRateCard.Name = getVendorAccountName(vendorAccount).substring(0, 30) + ' - ' + getProjectPriceBookName(projectPriceBookId);
-        }
         vendorRateCard.Link_to_Contract__c = contractUrl;
         vendorRateCard.Payment_Terms__c = paymentTerms;
         // vendorRateCard.OU__c = ou;
@@ -145,21 +181,9 @@ public with sharing class VendorRateCardController {
             String priceBookItemName = (String)editedRow.get('priceBookItemName');
             String description = (String)editedRow.get('description');
             String uom = (String)editedRow.get('uom');
-            String externalLaborCostStr = (String)editedRow.get('externalLaborCost');
-            String congruexVendorPriceStr = (String)editedRow.get('congruexVendorPrice');
-
-            if (congruexVendorPriceStr == null || congruexVendorPriceStr == '') {
-                congruexVendorPriceStr = '0';
-            }
-
-            if (externalLaborCostStr == null || externalLaborCostStr == '') {
-                externalLaborCostStr = '0';
-            }
-
-
-
-            Decimal externalLaborCost = Decimal.valueOf(externalLaborCostStr);
-            Decimal congruexVendorPrice = Decimal.valueOf(congruexVendorPriceStr);
+            // Decimal pricePerUnit = (Decimal)editedRow.get('pricePerUnit');
+            // Decimal congruexVendorPrice = (Decimal)editedRow.get('congruexVendorPrice');
+            Decimal congruexVendorPrice = Decimal.valueOf((String)editedRow.get('congruexVendorPrice'));
            
             // Create a new Congruex Vendor Pricing record and populate the fields
             Congruex_Vendor_Pricing__c vendorPricing = new Congruex_Vendor_Pricing__c (
@@ -192,58 +216,73 @@ public with sharing class VendorRateCardController {
         // Insert the list of new Congruex Vendor Pricing records
         insert vendorPricingList;
 
-    }
+        // Return the list of exposed edited rows to the LWC datatable
+        // return exposedEditedRows;
 
-    @AuraEnabled
-    public static void createVendorRateCardWithPricingItems(Id projectPriceBookId, Id vendorAccount, String contractUrl, String paymentTerms, String ou, List<Map<String, Object>> selectedRows) {
-        System.debug('========================================THIS IS THE START OF THE CREATE VENDOR RATE CARD WITH PRICING ITEMS METHOD========================================');
-        System.debug('projectPriceBookId: ' + projectPriceBookId);
-        System.debug('vendorAccountId: ' + vendorAccount);
-        
-        
-        // Create a new Vendor Rate Card record
-        Vendor_Rate_Card__c vendorRateCard = new Vendor_Rate_Card__c();
-        vendorRateCard.Project_Price_Book__c = projectPriceBookId;
-        vendorRateCard.Vendor_Account__c = vendorAccount;
-        vendorRateCard.Name = getVendorAccountName(vendorAccount) + ' - ' + getProjectPriceBookName(projectPriceBookId);
-        if (vendorRateCard.Name.length() > 80) {
-            vendorRateCard.Name = getVendorAccountName(vendorAccount).substring(0, 30) + ' - ' + getProjectPriceBookName(projectPriceBookId);
-        }
-        vendorRateCard.Link_to_Contract__c = contractUrl;
-        vendorRateCard.Payment_Terms__c = paymentTerms;
 
-        // Insert the new Vendor Rate Card record
-        insert vendorRateCard;
-        System.debug('vendorRateCard: ' + vendorRateCard);
-
-        // Create a list to hold Congruex Vendor Pricing records
-        List<Congruex_Vendor_Pricing__c> vendorPricingList = new List<Congruex_Vendor_Pricing__c>();
-        // Iterate through selected items
-
-        for (Map<String, Object> row : selectedRows) {
-            // Get the Price Book Item Id
-            String priceBookItemId = (String)row.get('priceBookItemId');
-            Decimal congruexVendorPrice = (Decimal)row.get('congruexVendorPrice') == null ? 0 : (Decimal)row.get('congruexVendorPrice');
-
-                // Create a new Congruex Vendor Pricing record and populate the fields
-                Congruex_Vendor_Pricing__c vendorPricing = new Congruex_Vendor_Pricing__c (
-                    Price_Book_Item__c = priceBookItemId,
-                    Cost__c = congruexVendorPrice,
-                    Account__c = vendorAccount,
-                    Vendor_Rate_Card__c = vendorRateCard.Id
-                ); 
-
-                // Add the new Congruex Vendor Pricing record to the list
-                vendorPricingList.add(vendorPricing);
-                System.debug('vendorPricing: ' + vendorPricing);
-            }
-
-        // Insert the list of new Congruex Vendor Pricing records
-        insert vendorPricingList;
-        System.debug('vendorPricingList: ' + vendorPricingList);
 
     }
 
+    // Get the Vendor Account from the Vendor_Account__c input field on the lightning web component
+    // @AuraEnabled
+    // public static Account getVendorAccount(Id vendorAccountId) {
+    //     Account vendorAccountId;
+    //     try {
+    //         vendorAccountId = [
+    //             SELECT Id, Name 
+    //             FROM Account 
+    //             WHERE Id = :vendorAccountId
+    //         ];
+    //     } catch (Exception e) {
+    //         System.debug('Error fetching Account:  ' + e.getMessage());
+    //     }
+    //     return vendorAccountId;
+    // }
+
+    
+
+
+
+
+
+
+
+    // // get the child Price Book Items related to the current Project Price Book
+    // @AuraEnabled
+    // public static List<sitetracker__Pricebook_Item__c> getPriceBookItems() {
+    //     return [SELECT Id, Name, Price_Book_Name__c, sitetracker__Description__c, UOM__c, Price_Per_Unit__c 
+    //             FROM sitetracker__Pricebook_Item__c
+    //             WHERE sitetracker__Project_Price_Book__c = :projectPriceBook.Id];
+    // }
+    
+
+
+    // @AuraEnabled
+    // public static List<sitetracker__Pricebook_Item__c> getPriceBookItems(Id projectPriceBookId) {
+    //     return [SELECT Id, Name, Price_Book_Name__c, sitetracker__Description__c, UOM__c, Price_Per_Unit__c 
+    //             FROM sitetracker__Pricebook_Item__c
+    //             WHERE sitetracker__Project_Price_Book__c = :projectPriceBookId];
+    // }
+
+    // If the Price Book Item is selected, create 
+
+
+
+//     // get the Price Book Items related to the current Vendor Rate Card
+//     public static List<sitetracker__Pricebook_Item__c> getPriceBookItems(String sitetracker__Project_Price_Book__c) {
+//         return [SELECT Id, Name, Price_Book_Name__c, sitetracker__Description__c, UOM__c, Price_Per_Unit__c 
+//                 FROM sitetracker__Pricebook_Item__c
+//                 WHERE sitetracker__Project_Price_Book__c = :getVendorRateCard.Project_Price_Book__c];
+//    }
+
+   // Search for Price Book Items to add to the Vendor Rate Card
+
+    // public static List<sitetracker__Pricebook_Item__c> getSearchedPriceBookItems(String sitetracker__Project_Price_Book__c, String searchKey) {
+    //       return [SELECT Id, Name, Price_Book_Name__c, sitetracker__Description__c, UOM__c, Price_Per_Unit__c 
+    //               FROM sitetracker__Pricebook_Item__c
+    //               WHERE sitetracker__Project_Price_Book__c = :sitetracker__Project_Price_Book__c 
+    //               AND Name LIKE :searchKey];
+    // }
 
     // For each Price Book Item added, create child Congruex Vendor Pricing records for each row related to the Vendor Rate Card
     public static void addPriceBookItems(List<sitetracker__Pricebook_Item__c> priceBookItems, Id vendorRateCardId) {
@@ -256,8 +295,4 @@ public with sharing class VendorRateCardController {
         }
         insert vendorPricingList;
     }
-
-
-
-
 }
